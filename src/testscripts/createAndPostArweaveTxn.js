@@ -60,7 +60,8 @@ async function run() {
     transaction: signedTransaction,
   });
 
-  console.log("Transaction uploaded", postedTransaction, transaction.id);
+  console.log("Transaction uploaded", postedTransaction);
+  console.log("Successful Txn id", transaction.id);
 }
 
 run()
