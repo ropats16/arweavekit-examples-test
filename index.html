@@ -1,10 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React</title>
+    <script>
+      import { Buffer } from "buffer"; // <-- no typo here ("/")
+      import process from "process";
+      import path from "path";
+      import os from "os";
+
+      window.global = window;
+      window.Buffer = Buffer;
+      window.process = process;
+      window.path = path;
+      window.os = os;
+    </script>
   </head>
   <body>
     <div id="root"></div>
