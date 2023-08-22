@@ -38,6 +38,7 @@ async function run() {
     environment: "mainnet",
     options: {
       tags: metaData,
+      signAndPost: true,
     },
   });
 

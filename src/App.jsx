@@ -5,6 +5,7 @@ import {
   signTransaction,
   postTransaction,
 } from "arweavekit/transaction";
+import { queryAllTransactionsGQL } from "arweavekit/graphql";
 
 async function logIn() {
   const userDetails = await Othent.logIn({
@@ -105,6 +106,40 @@ function App() {
       console.log("Transaction failed due to:", error.message);
     }
   }
+
+  async function queryGQLTxn() {
+    const query = `
+query{
+  transactions(tags: [
+  { name: "Contract-Src", values: ["DG22I8pR_5_7EJGvj5FbZIeEOgfm2o26xwAW5y4Dd14"] }
+  ] first: 100) {
+edges {
+  node {
+    id
+    owner {
+      address
+    }
+    tags {
+      name
+      value
+    }
+    block {
+      timestamp
+    }
+  }
+}
+}
+}
+
+`;
+
+    const res = await queryAllTransactionsGQL(query, {
+      gateway: "arweave.net",
+      filters: {},
+    });
+
+    console.log("This is the result of the query", res);
+  }
   return (
     <>
       <div className="flex flex-col gap-4 w-1/2">
@@ -120,6 +155,9 @@ function App() {
         </button>
         <button className="border-4" onClick={createBundlrTransaction}>
           Create and Post Bundlr Transaction
+        </button>
+        <button className="border-4" onClick={queryGQLTxn}>
+          Query All GQL Transactions
         </button>
       </div>
     </>
