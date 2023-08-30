@@ -6,6 +6,7 @@ import {
   postTransaction,
 } from "arweavekit/transaction";
 import { queryAllTransactionsGQL } from "arweavekit/graphql";
+import { Buffer } from "buffer";
 
 async function logIn() {
   const userDetails = await Othent.logIn({
@@ -90,7 +91,8 @@ function App() {
         { name: "Content-Type", value: "image/png" },
       ];
       const transaction = await createTransaction({
-        data: data,
+        data: Buffer.from(data),
+        // data: data,
         type: "data",
         environment: "mainnet",
         options: {
