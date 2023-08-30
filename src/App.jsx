@@ -45,7 +45,10 @@ function App() {
       const data = await toArrayBuffer(files[0]);
       console.log(data);
       const metaData = [
-        { name: "Creator", value: window.arweaveWallet.getActiveAddress },
+        {
+          name: "Creator",
+          value: await window.arweaveWallet.getActiveAddress(),
+        },
         { name: "Title", value: "Bundlr PNG" },
         { name: "Content-Type", value: "image/png" },
       ];
@@ -84,7 +87,7 @@ function App() {
         {
           name: "Creator",
           value: window.arweaveWallet
-            ? window.arweaveWallet.getActiveAddress
+            ? await window.arweaveWallet.getActiveAddress()
             : "Anon",
         },
         { name: "Title", value: "Bundlr PNG" },
@@ -93,6 +96,7 @@ function App() {
       const transaction = await createTransaction({
         data: Buffer.from(data),
         // data: data,
+        // data: window.Buffer.from(data),
         type: "data",
         environment: "mainnet",
         options: {

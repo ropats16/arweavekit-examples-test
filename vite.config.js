@@ -4,17 +4,6 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  resolve: {
-    // alias: {
-    //   process: "process/browser",
-    //   path: "path-browserify",
-    //   os: "os-browserify",
-    // },
-    fallback: {
-      stream: "stream-browserify",
-      buffer: "buffer",
-    },
-  },
   plugins: [
     react(),
     nodePolyfills({
