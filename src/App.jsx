@@ -6,7 +6,6 @@ import {
   postTransaction,
 } from "arweavekit/transaction";
 import { queryAllTransactionsGQL } from "arweavekit/graphql";
-import { Buffer } from "buffer";
 
 async function logIn() {
   const userDetails = await Othent.logIn({
@@ -44,11 +43,14 @@ function App() {
       console.log(files[0]);
       const data = await toArrayBuffer(files[0]);
       console.log(data);
+      let creator = "Anon";
+      try {
+        creator = await window.arweaveWallet.getActiveAddress();
+      } catch (e) {
+        //
+      }
       const metaData = [
-        {
-          name: "Creator",
-          value: await window.arweaveWallet.getActiveAddress(),
-        },
+        { name: "Creator", value: creator },
         { name: "Title", value: "Bundlr PNG" },
         { name: "Content-Type", value: "image/png" },
       ];
@@ -83,20 +85,19 @@ function App() {
       console.log(files[0]);
       const data = await toArrayBuffer(files[0]);
       console.log(data);
+      let creator = "Anon";
+      try {
+        creator = await window.arweaveWallet.getActiveAddress();
+      } catch (e) {
+        //
+      }
       const metaData = [
-        {
-          name: "Creator",
-          value: window.arweaveWallet
-            ? await window.arweaveWallet.getActiveAddress()
-            : "Anon",
-        },
+        { name: "Creator", value: creator },
         { name: "Title", value: "Bundlr PNG" },
         { name: "Content-Type", value: "image/png" },
       ];
       const transaction = await createTransaction({
-        data: Buffer.from(data),
-        // data: data,
-        // data: window.Buffer.from(data),
+        data: window.Buffer.from(data),
         type: "data",
         environment: "mainnet",
         options: {
