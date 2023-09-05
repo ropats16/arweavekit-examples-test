@@ -7,6 +7,7 @@ import {
 } from "arweavekit/transaction";
 import { queryAllTransactionsGQL } from "arweavekit/graphql";
 import { createContract, writeContract } from "arweavekit/contract";
+import Spinner from "./components/Spinner";
 
 async function logIn() {
   const userDetails = await Othent.logIn({
@@ -35,6 +36,9 @@ const toArrayBuffer = (file) =>
 
 function App() {
   const [files, setFiles] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingIndex, setLoadingIndex] = useState(0);
+
   function handleFileChange(e) {
     setFiles(e.target.files);
   }
@@ -117,28 +121,33 @@ function App() {
 
   async function queryGQLTxn() {
     const query = `
-query{
-  transactions(tags: [
-  { name: "Contract-Src", values: ["DG22I8pR_5_7EJGvj5FbZIeEOgfm2o26xwAW5y4Dd14"] }
-  ] first: 100) {
-edges {
-  node {
-    id
-    owner {
-      address
-    }
-    tags {
-      name
-      value
-    }
-    block {
-      timestamp
+query {
+  transactions(
+    tags: [
+      {
+        name: "Contract-Src"
+        values: ["DG22I8pR_5_7EJGvj5FbZIeEOgfm2o26xwAW5y4Dd14"]
+      }
+    ]
+    first: 100
+  ) {
+    edges {
+      node {
+        id
+        owner {
+          address
+        }
+        tags {
+          name
+          value
+        }
+        block {
+          timestamp
+        }
+      }
     }
   }
 }
-}
-}
-
 `;
 
     const res = await queryAllTransactionsGQL(query, {
@@ -181,33 +190,76 @@ export function handle(state, action) {
     console.log(response);
   }
 
+  async function functionWrapper(callback, index) {
+    setLoadingIndex(index);
+    setIsLoading(true);
+    try {
+      await callback();
+    } catch (err) {
+      // ignore
+    }
+    setIsLoading(false);
+  }
+
+  const inputElements = [
+    {
+      name: "LogIn with Othent",
+      onClick: logIn,
+    },
+    {
+      name: "LogOut with Othent",
+      onClick: logOut,
+    },
+    {
+      name: "",
+      onChange: handleFileChange,
+    },
+    {
+      name: "Create and Post Arweave Transaction",
+      onClick: createArweaveTransaction,
+    },
+    {
+      name: "Create and Post Bundlr Transaction",
+      onClick: createBundlrTransaction,
+    },
+    {
+      name: "Query All GQL Transactions",
+      onClick: queryGQLTxn,
+    },
+    {
+      name: "Create Contract Testnet",
+      onClick: createContractTestNet,
+    },
+    {
+      name: "Write Contract Testnet",
+      onClick: writeContractTestNet,
+    },
+  ];
+
   return (
-    <>
-      <div className="flex flex-col gap-4 w-1/2">
-        <button className="border-4" onClick={logIn}>
-          LogIn with Othent
-        </button>
-        <button className="border-4" onClick={logOut}>
-          LogOut with Othent
-        </button>
-        <input className="border-4" type="file" onChange={handleFileChange} />
-        <button className="border-4" onClick={createArweaveTransaction}>
-          Create and Post Arweave Transaction
-        </button>
-        <button className="border-4" onClick={createBundlrTransaction}>
-          Create and Post Bundlr Transaction
-        </button>
-        <button className="border-4" onClick={queryGQLTxn}>
-          Query All GQL Transactions
-        </button>
-        <button className="border-4" onClick={createContractTestNet}>
-          Create Contract Testnet
-        </button>
-        <button className="border-4" onClick={writeContractTestNet}>
-          Write Contract Testnet
-        </button>
+    <div className="container mx-auto flex justify-center h-screen pt-12 px-2">
+      <div className="flex flex-col gap-4 w-1/2 max-md:w-full">
+        {inputElements.map(({ name, onChange, onClick }, index) =>
+          onChange ? (
+            <input
+              key={index}
+              className="border-4 flex justify-center items-center p-1 cursor-pointer hover:bg-blue-200"
+              type="file"
+              onChange={onChange}
+            />
+          ) : (
+            <button
+              key={index}
+              className="border-4 flex justify-center items-center p-1 hover:bg-blue-200"
+              onClick={() => functionWrapper(onClick, index)}
+            >
+              {isLoading && loadingIndex === index && <Spinner />}
+              {name}
+            </button>
+          )
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
