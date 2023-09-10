@@ -7,6 +7,7 @@ import {
 } from "arweavekit/transaction";
 import { queryAllTransactionsGQL } from "arweavekit/graphql";
 import { createContract, writeContract } from "arweavekit/contract";
+import { encryptDataWithAES, decryptDataWithAES } from "arweavekit/encryption";
 import Spinner from "./components/Spinner";
 
 async function logIn() {
@@ -190,6 +191,47 @@ export function handle(state, action) {
     console.log(response);
   }
 
+  async function encryptDecryptData() {
+    function arraybufferEqual(buf1, buf2) {
+      if (buf1 === buf2) {
+        return true;
+      }
+
+      if (buf1.byteLength !== buf2.byteLength) {
+        return false;
+      }
+
+      var view1 = new DataView(buf1);
+      var view2 = new DataView(buf2);
+
+      var i = buf1.byteLength;
+      while (i--) {
+        if (view1.getUint8(i) !== view2.getUint8(i)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    const dataToEncrypt = new TextEncoder().encode("Hello World!").buffer;
+
+    const { rawEncryptedKeyAsBase64, combinedArrayBuffer } =
+      await encryptDataWithAES({
+        data: dataToEncrypt,
+      });
+
+    const decryptedData = await decryptDataWithAES({
+      data: combinedArrayBuffer,
+      key: rawEncryptedKeyAsBase64,
+    });
+
+    console.log(
+      "Encrypted and Decrypted successfully?: ",
+      arraybufferEqual(dataToEncrypt, decryptedData)
+    );
+  }
+
   async function functionWrapper(callback, index) {
     setLoadingIndex(index);
     setIsLoading(true);
@@ -233,6 +275,10 @@ export function handle(state, action) {
     {
       name: "Write Contract Testnet",
       onClick: writeContractTestNet,
+    },
+    {
+      name: "Encrypt & Decrypt Data",
+      onClick: encryptDecryptData,
     },
   ];
 
