@@ -7,7 +7,12 @@ import {
 } from "arweavekit/transaction";
 import { queryAllTransactionsGQL } from "arweavekit/graphql";
 import { createContract, writeContract } from "arweavekit/contract";
-import { encryptDataWithAES, decryptDataWithAES } from "arweavekit/encryption";
+import {
+  encryptDataWithAES,
+  decryptDataWithAES,
+  encryptAESKeywithRSA,
+  decryptAESKeywithRSA,
+} from "arweavekit/encryption";
 import Spinner from "./components/Spinner";
 
 async function logIn() {
@@ -232,6 +237,24 @@ export function handle(state, action) {
     );
   }
 
+  async function encryptDecryptKey() {
+    const keyToEncrypt = "ArweaveKit";
+
+    const encryptedKey = await encryptAESKeywithRSA({
+      key: keyToEncrypt,
+    });
+
+    const decryptedKey = await decryptAESKeywithRSA({
+      key: encryptedKey,
+    });
+
+    console.log({
+      encryptedKey,
+      keyToEncrypt,
+      decryptedKey,
+    });
+  }
+
   async function functionWrapper(callback, index) {
     setLoadingIndex(index);
     setIsLoading(true);
@@ -279,6 +302,10 @@ export function handle(state, action) {
     {
       name: "Encrypt & Decrypt Data",
       onClick: encryptDecryptData,
+    },
+    {
+      name: "Encrypt & Decrypt Key",
+      onClick: encryptDecryptKey,
     },
   ];
 
