@@ -6,7 +6,11 @@ import {
   postTransaction,
 } from "arweavekit/transaction";
 import { queryAllTransactionsGQL } from "arweavekit/graphql";
-import { createContract, writeContract } from "arweavekit/contract";
+import {
+  createContract,
+  writeContract,
+  readContractState,
+} from "arweavekit/contract";
 import {
   encryptDataWithAES,
   decryptDataWithAES,
@@ -196,6 +200,19 @@ export function handle(state, action) {
     console.log(response);
   }
 
+  async function readContractMainnet() {
+    const { readContract } = await readContractState({
+      environment: "mainnet",
+      contractTxId: "61vg8n54MGSC9ZHfSVAtQp4WjNb20TaThu6bkQ86pPI",
+      evaluationOptions: {
+        remoteStateSyncEnabled: true,
+        internalWrites: true,
+        allowBigInt: true,
+      },
+    });
+    console.log(readContract);
+  }
+
   async function encryptDecryptData() {
     function arraybufferEqual(buf1, buf2) {
       if (buf1 === buf2) {
@@ -261,7 +278,7 @@ export function handle(state, action) {
     try {
       await callback();
     } catch (err) {
-      // ignore
+      console.error(err);
     }
     setIsLoading(false);
   }
@@ -299,6 +316,7 @@ export function handle(state, action) {
       name: "Write Contract Testnet",
       onClick: writeContractTestNet,
     },
+    { name: "Read Contract mainnet", onClick: readContractMainnet },
     {
       name: "Encrypt & Decrypt Data",
       onClick: encryptDecryptData,
