@@ -6,7 +6,18 @@ import {
   postTransaction,
 } from "arweavekit/transaction";
 import { queryAllTransactionsGQL } from "arweavekit/graphql";
-import { Buffer } from "buffer";
+import {
+  createContract,
+  writeContract,
+  readContractState,
+} from "arweavekit/contract";
+import {
+  encryptDataWithAES,
+  decryptDataWithAES,
+  encryptAESKeywithRSA,
+  decryptAESKeywithRSA,
+} from "arweavekit/encryption";
+import Spinner from "./components/Spinner";
 
 async function logIn() {
   const userDetails = await Othent.logIn({
@@ -35,6 +46,9 @@ const toArrayBuffer = (file) =>
 
 function App() {
   const [files, setFiles] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingIndex, setLoadingIndex] = useState(0);
+
   function handleFileChange(e) {
     setFiles(e.target.files);
   }
@@ -44,11 +58,14 @@ function App() {
       console.log(files[0]);
       const data = await toArrayBuffer(files[0]);
       console.log(data);
+      let creator = "Anon";
+      try {
+        creator = await window.arweaveWallet.getActiveAddress();
+      } catch (e) {
+        //
+      }
       const metaData = [
-        {
-          name: "Creator",
-          value: await window.arweaveWallet.getActiveAddress(),
-        },
+        { name: "Creator", value: creator },
         { name: "Title", value: "Bundlr PNG" },
         { name: "Content-Type", value: "image/png" },
       ];
@@ -83,20 +100,19 @@ function App() {
       console.log(files[0]);
       const data = await toArrayBuffer(files[0]);
       console.log(data);
+      let creator = "Anon";
+      try {
+        creator = await window.arweaveWallet.getActiveAddress();
+      } catch (e) {
+        //
+      }
       const metaData = [
-        {
-          name: "Creator",
-          value: window.arweaveWallet
-            ? await window.arweaveWallet.getActiveAddress()
-            : "Anon",
-        },
+        { name: "Creator", value: creator },
         { name: "Title", value: "Bundlr PNG" },
         { name: "Content-Type", value: "image/png" },
       ];
       const transaction = await createTransaction({
-        data: Buffer.from(data),
-        // data: data,
-        // data: window.Buffer.from(data),
+        data: window.Buffer.from(data),
         type: "data",
         environment: "mainnet",
         options: {
@@ -115,28 +131,33 @@ function App() {
 
   async function queryGQLTxn() {
     const query = `
-query{
-  transactions(tags: [
-  { name: "Contract-Src", values: ["DG22I8pR_5_7EJGvj5FbZIeEOgfm2o26xwAW5y4Dd14"] }
-  ] first: 100) {
-edges {
-  node {
-    id
-    owner {
-      address
-    }
-    tags {
-      name
-      value
-    }
-    block {
-      timestamp
+query {
+  transactions(
+    tags: [
+      {
+        name: "Contract-Src"
+        values: ["DG22I8pR_5_7EJGvj5FbZIeEOgfm2o26xwAW5y4Dd14"]
+      }
+    ]
+    first: 100
+  ) {
+    edges {
+      node {
+        id
+        owner {
+          address
+        }
+        tags {
+          name
+          value
+        }
+        block {
+          timestamp
+        }
+      }
     }
   }
 }
-}
-}
-
 `;
 
     const res = await queryAllTransactionsGQL(query, {
@@ -146,27 +167,190 @@ edges {
 
     console.log("This is the result of the query", res);
   }
+
+  async function createContractTestNet() {
+    const { contract, result } = await createContract({
+      environment: "testnet",
+      initialState: JSON.stringify({ counter: 0 }),
+      contractSource: `
+export function handle(state, action) {
+  if (action.input.function === 'decrement') {
+    state.counter -= 1
+  }
+  if (action.input.function === 'increment') {
+    state.counter += 1
+  }
+
+  return { state }
+}`,
+    });
+
+    console.log(result, contract);
+  }
+
+  async function writeContractTestNet() {
+    const response = await writeContract({
+      environment: "testnet",
+      contractTxId: "CO7NkmEVj4wEwPySxYUY0_ElrEqU4IeTglU2IilCnLA",
+      options: {
+        function: "increment",
+      },
+    });
+
+    console.log(response);
+  }
+
+  async function readContractMainnet() {
+    const { readContract } = await readContractState({
+      environment: "mainnet",
+      contractTxId: "61vg8n54MGSC9ZHfSVAtQp4WjNb20TaThu6bkQ86pPI",
+      evaluationOptions: {
+        remoteStateSyncEnabled: true,
+        internalWrites: true,
+        allowBigInt: true,
+      },
+    });
+    console.log(readContract);
+  }
+
+  async function encryptDecryptData() {
+    function arraybufferEqual(buf1, buf2) {
+      if (buf1 === buf2) {
+        return true;
+      }
+
+      if (buf1.byteLength !== buf2.byteLength) {
+        return false;
+      }
+
+      var view1 = new DataView(buf1);
+      var view2 = new DataView(buf2);
+
+      var i = buf1.byteLength;
+      while (i--) {
+        if (view1.getUint8(i) !== view2.getUint8(i)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    const dataToEncrypt = new TextEncoder().encode("Hello World!").buffer;
+
+    const { rawEncryptedKeyAsBase64, combinedArrayBuffer } =
+      await encryptDataWithAES({
+        data: dataToEncrypt,
+      });
+
+    const decryptedData = await decryptDataWithAES({
+      data: combinedArrayBuffer,
+      key: rawEncryptedKeyAsBase64,
+    });
+
+    console.log(
+      "Encrypted and Decrypted successfully?: ",
+      arraybufferEqual(dataToEncrypt, decryptedData)
+    );
+  }
+
+  async function encryptDecryptKey() {
+    const keyToEncrypt = "ArweaveKit";
+
+    const encryptedKey = await encryptAESKeywithRSA({
+      key: keyToEncrypt,
+    });
+
+    const decryptedKey = await decryptAESKeywithRSA({
+      key: encryptedKey,
+    });
+
+    console.log({
+      encryptedKey,
+      keyToEncrypt,
+      decryptedKey,
+    });
+  }
+
+  async function functionWrapper(callback, index) {
+    setLoadingIndex(index);
+    setIsLoading(true);
+    try {
+      await callback();
+    } catch (err) {
+      console.error(err);
+    }
+    setIsLoading(false);
+  }
+
+  const inputElements = [
+    {
+      name: "LogIn with Othent",
+      onClick: logIn,
+    },
+    {
+      name: "LogOut with Othent",
+      onClick: logOut,
+    },
+    {
+      name: "",
+      onChange: handleFileChange,
+    },
+    {
+      name: "Create and Post Arweave Transaction",
+      onClick: createArweaveTransaction,
+    },
+    {
+      name: "Create and Post Bundlr Transaction",
+      onClick: createBundlrTransaction,
+    },
+    {
+      name: "Query All GQL Transactions",
+      onClick: queryGQLTxn,
+    },
+    {
+      name: "Create Contract Testnet",
+      onClick: createContractTestNet,
+    },
+    {
+      name: "Write Contract Testnet",
+      onClick: writeContractTestNet,
+    },
+    { name: "Read Contract mainnet", onClick: readContractMainnet },
+    {
+      name: "Encrypt & Decrypt Data",
+      onClick: encryptDecryptData,
+    },
+    {
+      name: "Encrypt & Decrypt Key",
+      onClick: encryptDecryptKey,
+    },
+  ];
+
   return (
-    <>
-      <div className="flex flex-col gap-4 w-1/2">
-        <button className="border-4" onClick={logIn}>
-          LogIn with Othent
-        </button>
-        <button className="border-4" onClick={logOut}>
-          LogOut with Othent
-        </button>
-        <input className="border-4" type="file" onChange={handleFileChange} />
-        <button className="border-4" onClick={createArweaveTransaction}>
-          Create and Post Arweave Transaction
-        </button>
-        <button className="border-4" onClick={createBundlrTransaction}>
-          Create and Post Bundlr Transaction
-        </button>
-        <button className="border-4" onClick={queryGQLTxn}>
-          Query All GQL Transactions
-        </button>
+    <div className="container mx-auto flex justify-center h-screen pt-12 px-2">
+      <div className="flex flex-col gap-4 w-1/2 max-md:w-full">
+        {inputElements.map(({ name, onChange, onClick }, index) =>
+          onChange ? (
+            <input
+              key={index}
+              className="border-4 flex justify-center items-center p-1 cursor-pointer hover:bg-blue-200"
+              type="file"
+              onChange={onChange}
+            />
+          ) : (
+            <button
+              key={index}
+              className="border-4 flex justify-center items-center p-1 hover:bg-blue-200"
+              onClick={() => functionWrapper(onClick, index)}
+            >
+              {isLoading && loadingIndex === index && <Spinner />}
+              {name}
+            </button>
+          )
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
