@@ -214,28 +214,6 @@ export function handle(state, action) {
   }
 
   async function encryptDecryptData() {
-    function arraybufferEqual(buf1, buf2) {
-      if (buf1 === buf2) {
-        return true;
-      }
-
-      if (buf1.byteLength !== buf2.byteLength) {
-        return false;
-      }
-
-      var view1 = new DataView(buf1);
-      var view2 = new DataView(buf2);
-
-      var i = buf1.byteLength;
-      while (i--) {
-        if (view1.getUint8(i) !== view2.getUint8(i)) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
     const dataToEncrypt = new TextEncoder().encode("Hello World!").buffer;
 
     const { rawEncryptedKeyAsBase64, combinedArrayBuffer } =
@@ -249,8 +227,10 @@ export function handle(state, action) {
     });
 
     console.log(
-      "Encrypted and Decrypted successfully?: ",
-      arraybufferEqual(dataToEncrypt, decryptedData)
+      `Encrypted and Decrypted successfully?: ${
+        // eslint-disable-next-line no-undef
+        Buffer.from(dataToEncrypt).compare(Buffer.from(decryptedData)) === 0
+      }`
     );
   }
 
