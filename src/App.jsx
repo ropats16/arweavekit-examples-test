@@ -1,4 +1,4 @@
-import { Othent } from "arweavekit/auth";
+import { Othent, disconnect } from "arweavekit/auth";
 import { useState } from "react";
 import {
   createTransaction,
@@ -18,6 +18,9 @@ import {
   decryptAESKeywithRSA,
 } from "arweavekit/encryption";
 import Spinner from "./components/Spinner";
+import { ArweaveWebWallet } from "arweave-wallet-connector";
+
+let wallet;
 
 async function logIn() {
   const userDetails = await Othent.logIn({
@@ -48,9 +51,26 @@ function App() {
   const [files, setFiles] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingIndex, setLoadingIndex] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
 
   function handleFileChange(e) {
     setFiles(e.target.files);
+  }
+
+  async function connectArweaveWebWallet() {
+    wallet = new ArweaveWebWallet();
+
+    wallet.setUrl("arweave.app");
+    await wallet.connect();
+    setIsConnected(true);
+  }
+
+  async function disconnectArweaveWebWallet() {
+    const wallet = new ArweaveWebWallet();
+
+    wallet.setUrl("arweave.app");
+    await wallet.disconnect();
+    setIsConnected(false);
   }
 
   async function createArweaveTransaction() {
@@ -171,6 +191,7 @@ query {
   async function createContractTestNet() {
     const { contract, result } = await createContract({
       environment: "testnet",
+      wallet,
       initialState: JSON.stringify({ counter: 0 }),
       contractSource: `
 export function handle(state, action) {
@@ -190,6 +211,7 @@ export function handle(state, action) {
 
   async function writeContractTestNet() {
     const response = await writeContract({
+      wallet,
       environment: "testnet",
       contractTxId: "CO7NkmEVj4wEwPySxYUY0_ElrEqU4IeTglU2IilCnLA",
       options: {
@@ -304,6 +326,14 @@ export function handle(state, action) {
     {
       name: "Encrypt & Decrypt Key",
       onClick: encryptDecryptKey,
+    },
+    {
+      name: isConnected ? "Connected." : "Connect Arweave Web Wallet",
+      onClick: connectArweaveWebWallet,
+    },
+    {
+      name: "Disconnect Arweave Web Wallet",
+      onClick: disconnectArweaveWebWallet,
     },
   ];
 
