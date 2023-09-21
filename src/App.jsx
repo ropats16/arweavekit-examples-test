@@ -1,4 +1,4 @@
-import { Othent, disconnect } from "arweavekit/auth";
+import { Othent } from "arweavekit/auth";
 import { useState } from "react";
 import {
   createTransaction,
@@ -19,6 +19,7 @@ import {
 } from "arweavekit/encryption";
 import Spinner from "./components/Spinner";
 import { ArweaveWebWallet } from "arweave-wallet-connector";
+import { Buffer } from "buffer";
 
 let wallet;
 
@@ -132,7 +133,7 @@ function App() {
         { name: "Content-Type", value: "image/png" },
       ];
       const transaction = await createTransaction({
-        data: window.Buffer.from(data),
+        data: Buffer.from(data),
         type: "data",
         environment: "mainnet",
         options: {
