@@ -10,6 +10,7 @@ import {
   createContract,
   writeContract,
   readContractState,
+  viewContractState,
 } from "arweavekit/contract";
 import {
   encryptDataWithAES,
@@ -236,6 +237,25 @@ export function handle(state, action) {
     console.log(readContract);
   }
 
+  async function viewContractMainnet() {
+    const { viewContract } = await viewContractState({
+      environment: "mainnet",
+      contractTxId: "61vg8n54MGSC9ZHfSVAtQp4WjNb20TaThu6bkQ86pPI",
+      connectWallet: false,
+      options: {
+        function: "balance",
+        target: "0RWuHL1469WYh146-x-5IKtes0WQweqv8d9OehyxFKw",
+      },
+      evaluationOptions: {
+        remoteStateSyncEnabled: true,
+        internalWrites: true,
+        allowBigInt: true,
+      },
+    });
+
+    console.log(viewContract);
+  }
+
   async function encryptDecryptData() {
     const dataToEncrypt = new TextEncoder().encode("Hello World!").buffer;
 
@@ -320,6 +340,7 @@ export function handle(state, action) {
       onClick: writeContractTestNet,
     },
     { name: "Read Contract mainnet", onClick: readContractMainnet },
+    { name: "View Contract mainnet", onClick: viewContractMainnet },
     {
       name: "Encrypt & Decrypt Data",
       onClick: encryptDecryptData,
