@@ -1,4 +1,4 @@
-import { Othent, disconnect } from "arweavekit/auth";
+import { Othent } from "arweavekit/auth";
 import { useState } from "react";
 import {
   createTransaction,
@@ -10,6 +10,7 @@ import {
   createContract,
   writeContract,
   readContractState,
+  viewContractState,
 } from "arweavekit/contract";
 import {
   encryptDataWithAES,
@@ -19,6 +20,7 @@ import {
 } from "arweavekit/encryption";
 import Spinner from "./components/Spinner";
 import { ArweaveWebWallet } from "arweave-wallet-connector";
+import { Buffer } from "buffer";
 
 let wallet;
 
@@ -132,7 +134,7 @@ function App() {
         { name: "Content-Type", value: "image/png" },
       ];
       const transaction = await createTransaction({
-        data: window.Buffer.from(data),
+        data: Buffer.from(data),
         type: "data",
         environment: "mainnet",
         options: {
@@ -235,6 +237,25 @@ export function handle(state, action) {
     console.log(readContract);
   }
 
+  async function viewContractMainnet() {
+    const { viewContract } = await viewContractState({
+      environment: "mainnet",
+      contractTxId: "61vg8n54MGSC9ZHfSVAtQp4WjNb20TaThu6bkQ86pPI",
+      connectWallet: false,
+      options: {
+        function: "balance",
+        target: "0RWuHL1469WYh146-x-5IKtes0WQweqv8d9OehyxFKw",
+      },
+      evaluationOptions: {
+        remoteStateSyncEnabled: true,
+        internalWrites: true,
+        allowBigInt: true,
+      },
+    });
+
+    console.log(viewContract);
+  }
+
   async function encryptDecryptData() {
     const dataToEncrypt = new TextEncoder().encode("Hello World!").buffer;
 
@@ -319,6 +340,7 @@ export function handle(state, action) {
       onClick: writeContractTestNet,
     },
     { name: "Read Contract mainnet", onClick: readContractMainnet },
+    { name: "View Contract mainnet", onClick: viewContractMainnet },
     {
       name: "Encrypt & Decrypt Data",
       onClick: encryptDecryptData,
